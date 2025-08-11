@@ -14,7 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      users: {
+        Row: {
+          created_at: string
+          has_uploaded: boolean
+          id_cliente: number
+          nome_cliente: string
+          senha_cliente: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          has_uploaded?: boolean
+          id_cliente?: number
+          nome_cliente: string
+          senha_cliente: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          has_uploaded?: boolean
+          id_cliente?: number
+          nome_cliente?: string
+          senha_cliente?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
