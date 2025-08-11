@@ -1,16 +1,17 @@
-// Supabase Edge Function: Login via MySQL
-// Requires environment variables configured in Supabase project:
-// MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB_NAME
-
+// Supabase Edge Function: Login using Supabase DB
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { Client } from "https://deno.land/x/mysql@v2.12.1/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 function cors(res: Response) {
   res.headers.set("Access-Control-Allow-Origin", "*");
-  res.headers.set("Access-Control-Allow-Headers", "*\n, Authorization, Content-Type");
+  res.headers.set("Access-Control-Allow-Headers", "* , Authorization, Content-Type");
   res.headers.set("Access-Control-Allow-Methods", "POST,OPTIONS");
   return res;
 }
+
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabase = createClient(supabaseUrl, serviceKey);
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
@@ -18,32 +19,28 @@ serve(async (req: Request) => {
 
   try {
     const { nome_cliente, senha_cliente } = await req.json();
+
     if (!nome_cliente || !senha_cliente) {
       return cors(new Response(JSON.stringify({ error: "Credenciais inválidas" }), { status: 400 }));
     }
 
-    const client = await new Client().connect({
-      hostname: Deno.env.get("MYSQL_HOST")!,
-      port: Number(Deno.env.get("MYSQL_PORT") || 3306),
-      username: Deno.env.get("MYSQL_USER")!,
-      password: Deno.env.get("MYSQL_PASSWORD")!,
-      db: Deno.env.get("MYSQL_DB_NAME")!,
-    });
+    const { data, error } = await supabase
+      .from("users")
+      .select("id_cliente, nome_cliente, has_uploaded")
+      .eq("nome_cliente", nome_cliente)
+      .eq("senha_cliente", senha_cliente)
+      .maybeSingle();
 
-    const rows = await client.execute(
-      "SELECT id_cliente, nome_cliente FROM users WHERE nome_cliente = ? AND senha_cliente = ? LIMIT 1",
-      [nome_cliente, senha_cliente]
-    );
+    if (error) {
+      return cors(new Response(JSON.stringify({ error: error.message }), { status: 500 }));
+    }
 
-    await client.close();
-
-    if (!rows.rows?.length) {
+    if (!data) {
       return cors(new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401 }));
     }
 
-    const user = rows.rows[0] as { id_cliente: number; nome_cliente: string };
-    return cors(new Response(JSON.stringify({ ...user, hasUploaded: false }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    return cors(new Response(JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } }));
   } catch (e) {
-    return cors(new Response(JSON.stringify({ error: e?.message || "Erro interno" }), { status: 500 }));
+    return cors(new Response(JSON.stringify({ error: (e as any)?.message || "Erro interno" }), { status: 500 }));
   }
 });
