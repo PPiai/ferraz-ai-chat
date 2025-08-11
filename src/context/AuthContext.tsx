@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 export type UserSession = {
   id_cliente: number;
@@ -41,19 +40,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (nome: string, senha: string) => {
     try {
+      // TODO: Substituir por chamada ao Edge Function "login" (MySQL) quando configurado
       if (!nome || !senha) return { ok: false, error: "Informe usuário e senha" };
-
-      const { data, error } = await supabase.functions.invoke("login", {
-        body: { nome_cliente: nome, senha_cliente: senha },
-      });
-
-      if (error) return { ok: false, error: error.message || "Falha ao autenticar." };
-      if (!data) return { ok: false, error: "Credenciais inválidas" };
-
       const session: UserSession = {
-        id_cliente: data.id_cliente,
-        nome_cliente: data.nome_cliente,
-        hasUploaded: !!data.has_uploaded,
+        id_cliente: Math.floor(Math.random() * 1000000),
+        nome_cliente: nome,
+        hasUploaded: false,
       };
       setUser(session);
       persist(session);

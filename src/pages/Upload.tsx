@@ -29,7 +29,7 @@ const Upload: React.FC = () => {
       // Envia apenas o primeiro arquivo para simplificar; pode-se iterar se necessário
       form.append("file", files[0]);
 
-      const resp = await fetch("https://drmrxhbwvlpigljimayp.supabase.co/functions/v1/upload-proxy", {
+      const resp = await fetch("https://ferrazpiai-n8n-editor.uyk8ty.easypanel.host/webhook-test/upload", {
         method: "POST",
         body: form,
       });
